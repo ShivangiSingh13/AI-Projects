@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenGrow AI: Smart Gardening Assistant</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0fdf4; /* Light green background */
+            color: #166534; /* Dark green text */
+        }
+        .container {
+            max-width: 960px;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* Rounded corners */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+        }
+        .btn-primary {
+            background-color: #22c55e; /* Green-500 */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem; /* Rounded corners */
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #16a34a; /* Green-600 */
+        }
+        .input-file {
+            display: none;
+        }
+        .custom-file-upload {
+            border: 2px dashed #22c55e;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            text-align: center;
+            color: #22c55e;
+            transition: background-color 0.3s ease;
+        }
+        .custom-file-upload:hover {
+            background-color: #ecfdf5; /* Green-50 */
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #22c55e;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            text-align: center;
+            max-width: 90%;
+            width: 400px;
+        }
+        .message-box-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        .message-box button {
+            background-color: #22c55e;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            cursor: pointer;
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: #ffffff;
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            width: 90%;
+        }
+        .modal-close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #166534;
+        }
+        .modal-content input[type="text"],
+        .modal-content input[type="date"],
+        .modal-content textarea {
+            border: 1px solid #ccc;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen items-center py-8 px-4">
+    <div class="container mx-auto flex flex-col gap-8">
+        <!-- Header Section -->
+        <header class="text-center">
+            <h1 class="text-5xl font-extrabold text-green-800 mb-4">
+                <span class="text-green-500">🍃</span> GreenGrow AI
+            </h1>
+            <p class="text-xl text-green-700">Your Smart Gardening and Plant Care Assistant</p>
+            <p class="text-sm text-green-600 mt-2">User ID: <span id="userIdDisplay">Loading...</span></p>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Image Upload and Analysis Section -->
+            <section class="lg:col-span-2 card flex flex-col items-center">
+                <h2 class="text-3xl font-semibold text-green-700 mb-6">Analyze Your Plant</h2>
+                <div class="w-full flex flex-col items-center gap-4">
+                    <label for="imageUpload" class="custom-file-upload w-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <span id="uploadText">Click to upload a plant image</span>
+                        <input id="imageUpload" type="file" accept="image/*" class="input-file">
+                    </label>
+                    <img id="imagePreview" class="hidden w-full max-h-80 object-contain rounded-xl border-2 border-green-200" src="#" alt="Image Preview">
+                    <button id="analyzeBtn" class="btn-primary w-full flex items-center justify-center gap-2" disabled>
+                        <span id="btnText">Analyze Plant Health</span>
+                        <div id="loadingSpinner" class="loading-spinner hidden"></div>
+                    </button>
+                </div>
+
+                <div id="analysisResults" class="mt-8 w-full hidden">
+                    <h3 class="text-2xl font-semibold text-green-700 mb-4">Analysis Results</h3>
+                    <div class="bg-green-50 p-6 rounded-xl border border-green-200">
+                        <p class="text-green-800 mb-2"><strong>Plant Identified:</strong> <span id="plantName"></span></p>
+                        <p class="text-green-800 mb-2"><strong>Health Status:</strong> <span id="healthStatus"></span></p>
+                        <div class="mb-4">
+                            <h4 class="text-xl font-medium text-green-700 mt-4 mb-2">Plant Details:</h4>
+                            <p id="plantDetails" class="text-green-700"></p>
+                        </div>
+                        <div class="mb-4">
+                            <h4 class="text-xl font-medium text-green-700 mt-4 mb-2">Care Tips:</h4>
+                            <ul id="careTips" class="list-disc list-inside text-green-700"></ul>
+                        </div>
+                        <div>
+                            <h4 class="text-xl font-medium text-green-700 mt-4 mb-2">Disease/Pest Detection & Treatment:</h4>
+                            <p id="diseasePest" class="text-green-700"></p>
+                        </div>
+                        <button id="saveAnalyzedPlantBtn" class="btn-primary mt-4 w-full">Save This Plant</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reminders and Guides Section -->
+            <section class="lg:col-span-1 flex flex-col gap-8">
+                <!-- Daily Care Reminders -->
+                <div class="card">
+                    <h2 class="text-3xl font-semibold text-green-700 mb-6">Daily Care Reminders</h2>
+                    <div class="flex flex-col gap-2 mb-4">
+                        <input type="text" id="generalReminderText" placeholder="e.g., Check all plants" class="p-2 border-2 border-green-300 rounded-lg focus:outline-none focus:border-green-500 text-green-800 bg-green-50">
+                        <button id="addGeneralReminderBtn" class="btn-primary">Add General Reminder</button>
+                    </div>
+                    <ul id="generalRemindersList" class="list-disc list-inside text-green-700 space-y-2">
+                        <p id="noGeneralReminders" class="text-green-600">No general reminders set yet.</p>
+                    </ul>
+                </div>
+
+                <!-- Seasonal Guides -->
+                <div class="card">
+                    <h2 class="text-3xl font-semibold text-green-700 mb-6">Seasonal Guides</h2>
+                    <div class="flex flex-col md:flex-row gap-2 mb-4">
+                        <input type="text" id="locationInput" placeholder="e.g., 'Temperate', 'New York'"
+                               class="flex-grow p-2 border-2 border-green-300 rounded-lg focus:outline-none focus:border-green-500 text-green-800 bg-green-50">
+                        <button id="getSeasonalGuideBtn" class="btn-primary w-full md:w-auto flex items-center justify-center gap-2">
+                            <span id="seasonalBtnText">Get Guide</span>
+                            <div id="seasonalLoadingSpinner" class="loading-spinner hidden"></div>
+                        </button>
+                    </div>
+                    <div id="seasonalGuideResults" class="space-y-4">
+                        <p class="text-green-600" id="seasonalGuidePlaceholder">Enter a location and click 'Get Guide' to see seasonal tips.</p>
+                        <div id="springGuide" class="hidden">
+                            <h3 class="text-xl font-medium text-green-700">Spring:</h3>
+                            <ul class="list-disc list-inside text-green-700"></ul>
+                        </div>
+                        <div id="summerGuide" class="hidden">
+                            <h3 class="text-xl font-medium text-green-700">Summer:</h3>
+                            <ul class="list-disc list-inside text-green-700"></ul>
+                        </div>
+                        <div id="autumnGuide" class="hidden">
+                            <h3 class="text-xl font-medium text-green-700">Autumn:</h3>
+                            <ul class="list-disc list-inside text-green-700"></ul>
+                        </div>
+                        <div id="winterGuide" class="hidden">
+                            <h3 class="text-xl font-medium text-green-700">Winter:</h3>
+                            <ul class="list-disc list-inside text-green-700"></ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- New Section: Search Plant by Name -->
+        <section class="card flex flex-col items-center mt-8">
+            <h2 class="text-3xl font-semibold text-green-700 mb-6">Search Plant by Name</h2>
+            <div class="w-full flex flex-col md:flex-row items-center gap-4">
+                <input type="text" id="plantNameInput" placeholder="Enter plant name (e.g., 'Rose', 'Fern')"
+                       class="flex-grow p-3 border-2 border-green-300 rounded-lg focus:outline-none focus:border-green-500 text-green-800 bg-green-50">
+                <button id="searchPlantBtn" class="btn-primary w-full md:w-auto flex items-center justify-center gap-2">
+                    <span id="searchBtnText">Search Plant</span>
+                    <div id="searchLoadingSpinner" class="loading-spinner hidden"></div>
+                </button>
+            </div>
+
+            <div id="plantSearchResults" class="mt-8 w-full hidden">
+                <h3 class="text-2xl font-semibold text-green-700 mb-4">Search Results</h3>
+                <div class="bg-green-50 p-6 rounded-xl border border-green-200">
+                    <p class="text-green-800 mb-2"><strong>Plant Name:</strong> <span id="searchedPlantName"></span></p>
+                    <div class="mb-4">
+                        <h4 class="text-xl font-medium text-green-700 mt-4 mb-2">Details:</h4>
+                        <p id="searchedPlantDetails" class="text-green-700"></p>
+                    </div>
+                    <div class="mb-4">
+                        <h4 class="text-xl font-medium text-green-700 mt-4 mb-2">Care Tips:</h4>
+                        <ul id="searchedCareTips" class="list-disc list-inside text-green-700"></ul>
+                    </div>
+                    <button id="saveSearchedPlantBtn" class="btn-primary mt-4 w-full">Save This Plant</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- My Saved Plants Section -->
+        <section class="card mt-8">
+            <h2 class="text-3xl font-semibold text-green-700 mb-6">My Saved Plants</h2>
+            <div id="savedPlantsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <p id="noSavedPlants" class="text-green-700 col-span-full text-center">No plants saved yet. Analyze or search for a plant to add it!</p>
+                <!-- Saved plants will be dynamically loaded here -->
+            </div>
+        </section>
+    </div>
+
+    <!-- Message Box for Alerts -->
+    <div id="messageBoxOverlay" class="message-box-overlay hidden"></div>
+    <div id="messageBox" class="message-box hidden">
+        <p id="messageBoxText" class="text-lg text-green-800"></p>
+        <button id="messageBoxCloseBtn">OK</button>
+    </div>
+
+    <!-- Plant Details Modal -->
+    <div id="plantDetailsModal" class="modal hidden">
+        <div class="modal-content">
+            <button class="modal-close-btn" id="closeModalBtn">&times;</button>
+            <h2 class="text-3xl font-semibold text-green-700 mb-4" id="modalPlantName"></h2>
+            <p class="text-green-800 mb-2"><strong>Health Status:</strong> <span id="modalHealthStatus"></span></p>
+            <div class="mb-4">
+                <h4 class="text-xl font-medium text-green-700 mt-4 mb-2">Details:</h4>
+                <p id="modalPlantDetails" class="text-green-700"></p>
+            </div>
+            <div class="mb-4">
+                <h4 class="text-xl font-medium text-green-700 mt-4 mb-2">Care Tips:</h4>
+                <ul id="modalCareTips" class="list-disc list-inside text-green-700"></ul>
+            </div>
+            <div class="mb-4">
+                <h4 class="text-xl font-medium text-green-700 mt-4 mb-2">Disease/Pest:</h4>
+                <p id="modalDiseasePest" class="text-green-700"></p>
+            </div>
+
+            <!-- Reminders Section in Modal -->
+            <div class="mt-6 border-t pt-4 border-green-200">
+                <h3 class="text-2xl font-semibold text-green-700 mb-4">Custom Reminders</h3>
+                <div class="flex flex-col md:flex-row gap-2 mb-4">
+                    <input type="text" id="reminderText" placeholder="e.g., Water, Fertilize, Prune" class="flex-grow">
+                    <input type="date" id="reminderDate" class="w-full md:w-auto">
+                    <button id="addReminderBtn" class="btn-primary w-full md:w-auto">Add Reminder</button>
+                </div>
+                <ul id="remindersList" class="list-disc list-inside text-green-700 space-y-2">
+                    <p id="noReminders" class="text-green-600">No reminders set yet.</p>
+                </ul>
+            </div>
+
+            <!-- Growth Tracking Section in Modal -->
+            <div class="mt-6 border-t pt-4 border-green-200">
+                <h3 class="text-2xl font-semibold text-green-700 mb-4">Growth Tracking</h3>
+                <div class="flex flex-col gap-2 mb-4">
+                    <textarea id="observationText" placeholder="Log your observations (e.g., 'New leaf', 'First bloom', 'Pest spotted')" rows="3"></textarea>
+                    <input type="date" id="observationDate">
+                    <button id="addObservationBtn" class="btn-primary">Add Observation</button>
+                </div>
+                <div id="observationsList" class="space-y-4">
+                    <p id="noObservations" class="text-green-600">No observations logged yet.</p>
+                </div>
+            </div>
+
+            <button id="deletePlantBtn" class="btn-primary bg-red-500 hover:bg-red-600 mt-6 w-full">Delete This Plant</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Initialization
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // IMPORTANT: When running locally, you must provide your Firebase config here.
+        // Replace the empty object with your actual Firebase project configuration.
+        // You can find your Firebase config in your Firebase project settings.
+        const firebaseConfig = {
+            apiKey: "AIzaSyDwmTEWEcTNXUrIIYL833Gf4bDKRAOlrJ4",
+            authDomain: "sample-firebase-ai-app-fe1f7.firebaseapp.com",
+            projectId: "sample-firebase-ai-app-fe1f7",
+            storageBucket: "sample-firebase-ai-app-fe1f7.firebasestorage.app",
+            messagingSenderId: "344971638053",
+            appId: "1:344971638053:web:165cb1dc7004b58579d6cc"
+        };
+
+
+        let app, db, auth, userId;
+        let isAuthReady = false;
+
+        // Function to display a custom message box instead of alert()
+        function showMessageBox(message) {
+            const messageBoxOverlay = document.getElementById('messageBoxOverlay');
+            const messageBox = document.getElementById('messageBox');
+            const messageBoxText = document.getElementById('messageBoxText');
+            const messageBoxCloseBtn = document.getElementById('messageBoxCloseBtn');
+
+            messageBoxText.textContent = message;
+            messageBoxOverlay.classList.remove('hidden');
+            messageBox.classList.remove('hidden');
+
+            messageBoxCloseBtn.onclick = () => {
+                messageBoxOverlay.classList.add('hidden');
+                messageBox.classList.add('hidden');
+            };
+        }
+
+        // Initialize Firebase and authenticate
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    document.getElementById('userIdDisplay').textContent = userId;
+                    isAuthReady = true;
+                    // Load saved plants and general reminders once authenticated
+                    loadSavedPlants();
+                    loadGeneralReminders();
+                } else {
+                    // Sign in anonymously if no user is authenticated
+                    try {
+                        // This token is provided by the Canvas environment.
+                        // When running locally, __initial_auth_token will be undefined,
+                        // so it will fall back to signInAnonymously.
+                        if (typeof __initial_auth_token !== 'undefined') {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        console.error("Error during anonymous sign-in:", error);
+                        showMessageBox("Failed to sign in. Please try refreshing the page.");
+                    }
+                }
+            });
+        } catch (error) {
+            console.error("Firebase initialization error:", error);
+            showMessageBox("Failed to initialize Firebase. Please check your configuration.");
+        }
+
+
+        // Common elements
+        const messageBoxOverlay = document.getElementById('messageBoxOverlay');
+        const messageBox = document.getElementById('messageBox');
+        const messageBoxText = document.getElementById('messageBoxText');
+        const messageBoxCloseBtn = document.getElementById('messageBoxCloseBtn');
+
+        // Elements for Image Analysis Section
+        const imageUpload = document.getElementById('imageUpload');
+        const imagePreview = document.getElementById('imagePreview');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const uploadText = document.getElementById('uploadText');
+        const btnText = document.getElementById('btnText');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const analysisResults = document.getElementById('analysisResults');
+        const plantName = document.getElementById('plantName');
+        const healthStatus = document.getElementById('healthStatus');
+        const plantDetails = document.getElementById('plantDetails');
+        const careTipsList = document.getElementById('careTips');
+        const diseasePest = document.getElementById('diseasePest');
+        // Corrected typo here:
+        const saveAnalyzedPlantBtn = document.getElementById('saveAnalyzedPlantBtn');
+
+        let base64Image = ''; // To store the base64 encoded image for image analysis
+        let currentAnalyzedPlantData = null; // To store data for saving
+
+        imageUpload.addEventListener('change', function(event) {
+            console.log("Image upload changed.");
+            const file = event.target.files[0];
+            if (file) {
+                uploadText.textContent = file.name;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.classList.remove('hidden');
+                    analyzeBtn.disabled = false; // Enable analyze button
+                    base64Image = e.target.result.split(',')[1]; // Get base64 data part
+                };
+                reader.readAsDataURL(file);
+            } else {
+                uploadText.textContent = 'Click to upload a plant image';
+                imagePreview.classList.add('hidden');
+                imagePreview.src = '#';
+                analyzeBtn.disabled = true;
+                base64Image = '';
+            }
+            // Hide previous analysis results when a new image is selected
+            analysisResults.classList.add('hidden');
+            saveAnalyzedPlantBtn.classList.add('hidden'); // Hide save button
+            currentAnalyzedPlantData = null;
+        });
+
+        analyzeBtn.addEventListener('click', async function() {
+            console.log("Analyze Plant Health button clicked!");
+            if (!base64Image) {
+                showMessageBox('Please upload an image first.');
+                return;
+            }
+
+            // Show loading state
+            btnText.textContent = 'Analyzing...';
+            loadingSpinner.classList.remove('hidden');
+            analyzeBtn.disabled = true;
+            analysisResults.classList.add('hidden'); // Hide previous results
+            saveAnalyzedPlantBtn.classList.add('hidden');
+
+            try {
+                // Construct the prompt for the AI model, now asking for plant details
+                const prompt = "Analyze this plant image. Identify the plant, provide a brief description and key characteristics of the plant (plantDetails), assess its general health (e.g., 'Healthy', 'Needs attention', 'Distressed'), provide specific care tips (watering, sunlight, fertilizer), and detect any potential diseases or pests, offering treatment recommendations if found. Format the response as a JSON object with keys: plantName, plantDetails, healthStatus, careTips (array of strings), diseasePest (string).";
+
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = {
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [
+                                { text: prompt },
+                                {
+                                    inlineData: {
+                                        mimeType: "image/jpeg", // Assuming JPEG, adjust if needed
+                                        data: base64Image
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "plantName": { "type": "STRING" },
+                                "plantDetails": { "type": "STRING" },
+                                "healthStatus": { "type": "STRING" },
+                                "careTips": {
+                                    "type": "ARRAY",
+                                    "items": { "type": "STRING" }
+                                },
+                                "diseasePest": { "type": "STRING" }
+                            },
+                            "propertyOrdering": ["plantName", "healthStatus", "plantDetails", "careTips", "diseasePest"]
+                        }
+                    }
+                };
+
+                const apiKey = "AIzaSyCW0grfwkxbhKndK02L11y4NRUhYWPhpec"; // Updated API Key
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    try {
+                        const jsonResponse = JSON.parse(result.candidates[0].content.parts[0].text);
+
+                        // Display results
+                        plantName.textContent = jsonResponse.plantName || 'N/A';
+                        healthStatus.textContent = jsonResponse.healthStatus || 'N/A';
+                        plantDetails.textContent = jsonResponse.plantDetails || 'No specific details provided.';
+
+                        // Clear previous care tips
+                        careTipsList.innerHTML = '';
+                        if (jsonResponse.careTips && Array.isArray(jsonResponse.careTips)) {
+                            jsonResponse.careTips.forEach(tip => {
+                                const li = document.createElement('li');
+                                li.textContent = tip;
+                                careTipsList.appendChild(li);
+                            });
+                        } else {
+                            const li = document.createElement('li');
+                            li.textContent = 'No specific care tips provided.';
+                            careTipsList.appendChild(li);
+                        }
+
+                        diseasePest.textContent = jsonResponse.diseasePest || 'No specific disease or pest detected.';
+                        analysisResults.classList.remove('hidden');
+                        saveAnalyzedPlantBtn.classList.remove('hidden'); // Show save button
+
+                        // Store current data for saving
+                        currentAnalyzedPlantData = {
+                            plantName: jsonResponse.plantName || 'Unknown Plant',
+                            plantDetails: jsonResponse.plantDetails || 'No specific details provided.',
+                            healthStatus: jsonResponse.healthStatus || 'N/A',
+                            careTips: jsonResponse.careTips || [],
+                            diseasePest: jsonResponse.diseasePest || 'No specific disease or pest detected.',
+                            reminders: [],
+                            growthObservations: []
+                        };
+                    } catch (parseError) {
+                        console.error('Error parsing AI response JSON for image analysis:', parseError);
+                        console.error('Raw AI response for image analysis:', result.candidates[0].content.parts[0].text);
+                        showMessageBox('AI response for image analysis was unreadable. Please try another image.');
+                    }
+
+                } else {
+                    showMessageBox('Could not get a valid analysis from the AI. Please try another image.');
+                    console.error('AI response structure unexpected for image analysis:', result); // Log the unexpected result
+                    if (result.error) {
+                        console.error('API Error details for image analysis:', result.error);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error during AI analysis:', error);
+                showMessageBox('An error occurred during analysis. Please try again.');
+            } finally {
+                // Reset loading state
+                btnText.textContent = 'Analyze Plant Health';
+                loadingSpinner.classList.add('hidden');
+                analyzeBtn.disabled = false;
+            }
+        });
+
+        // Elements for Search Plant by Name Section
+        const plantNameInput = document.getElementById('plantNameInput');
+        const searchPlantBtn = document.getElementById('searchPlantBtn');
+        const searchBtnText = document.getElementById('searchBtnText');
+        const searchLoadingSpinner = document.getElementById('searchLoadingSpinner');
+        const plantSearchResults = document.getElementById('plantSearchResults');
+        const searchedPlantName = document.getElementById('searchedPlantName');
+        const searchedPlantDetails = document.getElementById('searchedPlantDetails');
+        const searchedCareTips = document.getElementById('searchedCareTips');
+        const saveSearchedPlantBtn = document.getElementById('saveSearchedPlantBtn');
+
+        let currentSearchedPlantData = null; // To store data for saving
+
+        searchPlantBtn.addEventListener('click', async function() {
+            console.log("Search Plant button clicked!");
+            const plantNameToSearch = plantNameInput.value.trim();
+            if (!plantNameToSearch) {
+                showMessageBox('Please enter a plant name to search.');
+                return;
+            }
+
+            // Show loading state
+            searchBtnText.textContent = 'Searching...';
+            searchLoadingSpinner.classList.remove('hidden');
+            searchPlantBtn.disabled = true;
+            plantSearchResults.classList.add('hidden'); // Hide previous search results
+            saveSearchedPlantBtn.classList.add('hidden');
+            currentSearchedPlantData = null;
+
+            try {
+                // Construct the prompt for searching plant by name
+                const prompt = `Provide detailed information about the plant "${plantNameToSearch}". Include its common name, a brief description, its typical care requirements (watering, sunlight, soil, fertilizer), and any common issues or unique facts. Format the response as a JSON object with keys: plantName, plantDetails, careTips (array of strings).`;
+
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "plantName": { "type": "STRING" },
+                                "plantDetails": { "type": "STRING" },
+                                "careTips": {
+                                    "type": "ARRAY",
+                                    "items": { "type": "STRING" }
+                                }
+                            },
+                            "propertyOrdering": ["plantName", "plantDetails", "careTips"]
+                        }
+                    }
+                };
+
+                const apiKey = "AIzaSyCW0grfwkxbhKndK02L11y4NRUhYWPhpec"; // Updated API Key
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    try {
+                        const jsonResponse = JSON.parse(result.candidates[0].content.parts[0].text);
+
+                        // Display search results
+                        searchedPlantName.textContent = jsonResponse.plantName || 'N/A';
+                        searchedPlantDetails.textContent = jsonResponse.plantDetails || 'No details found for this plant.';
+
+                        searchedCareTips.innerHTML = '';
+                        if (jsonResponse.careTips && Array.isArray(jsonResponse.careTips)) {
+                            jsonResponse.careTips.forEach(tip => {
+                                const li = document.createElement('li');
+                                li.textContent = tip;
+                                searchedCareTips.appendChild(li);
+                            });
+                        } else {
+                            const li = document.createElement('li');
+                            li.textContent = 'No specific care tips provided.';
+                            searchedCareTips.appendChild(li);
+                        }
+                        plantSearchResults.classList.remove('hidden');
+                        saveSearchedPlantBtn.classList.remove('hidden'); // Show save button
+
+                        // Store current data for saving
+                        currentSearchedPlantData = {
+                            plantName: jsonResponse.plantName || 'Unknown Plant',
+                            plantDetails: jsonResponse.plantDetails || 'No specific details provided.',
+                            careTips: jsonResponse.careTips || [],
+                            healthStatus: 'Not assessed (searched by name)', // Default for searched plants
+                            diseasePest: 'Not assessed (searched by name)', // Default for searched plants
+                            reminders: [],
+                            growthObservations: []
+                        };
+                    } catch (parseError) {
+                        console.error('Error parsing AI response JSON for plant search:', parseError);
+                        console.error('Raw AI response for plant search:', result.candidates[0].content.parts[0].text);
+                        showMessageBox('AI response for this plant was unreadable. Please try a different name or rephrase.');
+                    }
+
+                } else {
+                    showMessageBox('Could not find information for this plant. Please try a different name.');
+                    console.error('AI response structure unexpected for plant search:', result); // Log the unexpected result
+                    if (result.error) {
+                        console.error('API Error details for plant search:', result.error);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error during plant name search:', error);
+                showMessageBox('An error occurred during search. Please try again.');
+            } finally {
+                // Reset loading state
+                searchBtnText.textContent = 'Search Plant';
+                searchLoadingSpinner.classList.add('hidden');
+                searchPlantBtn.disabled = false;
+            }
+        });
+
+        // Elements for My Saved Plants Section
+        const savedPlantsList = document.getElementById('savedPlantsList');
+        const noSavedPlants = document.getElementById('noSavedPlants');
+
+        // Save Plant to Firestore
+        saveAnalyzedPlantBtn.addEventListener('click', async () => {
+            console.log("Save Analyzed Plant button clicked!");
+            if (currentAnalyzedPlantData) {
+                await savePlantToFirestore(currentAnalyzedPlantData);
+            }
+        });
+
+        saveSearchedPlantBtn.addEventListener('click', async () => {
+            console.log("Save Searched Plant button clicked!");
+            if (currentSearchedPlantData) {
+                await savePlantToFirestore(currentSearchedPlantData);
+            }
+        });
+
+        async function savePlantToFirestore(plantData) {
+            if (!isAuthReady || !userId) {
+                showMessageBox("Authentication not ready. Please wait a moment and try again.");
+                return;
+            }
+            if (!plantData || !plantData.plantName) {
+                showMessageBox("No plant data to save.");
+                return;
+            }
+
+            try {
+                // Check if plant already exists for this user to prevent duplicates
+                const plantsRef = collection(db, `artifacts/${appId}/users/${userId}/plants`);
+                const q = query(plantsRef, where("plantName", "==", plantData.plantName));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    showMessageBox(`"${plantData.plantName}" is already in your saved plants!`);
+                    return;
+                }
+
+                await addDoc(plantsRef, plantData);
+                showMessageBox(`"${plantData.plantName}" saved successfully!`);
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                showMessageBox("Failed to save plant. Please try again.");
+            }
+        }
+
+        // Load Saved Plants from Firestore
+        function loadSavedPlants() {
+            if (!isAuthReady || !userId) {
+                // console.log("Auth not ready, cannot load saved plants.");
+                return;
+            }
+
+            const plantsRef = collection(db, `artifacts/${appId}/users/${userId}/plants`);
+            onSnapshot(plantsRef, (snapshot) => {
+                savedPlantsList.innerHTML = ''; // Clear current list
+                if (snapshot.empty) {
+                    noSavedPlants.classList.remove('hidden');
+                } else {
+                    noSavedPlants.classList.add('hidden');
+                    snapshot.forEach(doc => {
+                        const plant = { id: doc.id, ...doc.data() };
+                        const plantCard = document.createElement('div');
+                        plantCard.className = 'card p-4 cursor-pointer hover:bg-green-50 transition-colors';
+                        plantCard.innerHTML = `
+                            <h3 class="text-xl font-semibold text-green-700">${plant.plantName}</h3>
+                            <p class="text-green-800 text-sm mt-1">Status: ${plant.healthStatus || 'N/A'}</p>
+                        `;
+                        plantCard.addEventListener('click', () => openPlantDetailsModal(plant));
+                        savedPlantsList.appendChild(plantCard);
+                    });
+                }
+            }, (error) => {
+                console.error("Error listening to saved plants:", error);
+                showMessageBox("Error loading your saved plants.");
+            });
+        }
+
+        // Plant Details Modal Elements
+        const plantDetailsModal = document.getElementById('plantDetailsModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const modalPlantName = document.getElementById('modalPlantName');
+        const modalHealthStatus = document.getElementById('modalHealthStatus');
+        const modalPlantDetails = document.getElementById('modalPlantDetails');
+        const modalCareTips = document.getElementById('modalCareTips');
+        const modalDiseasePest = document.getElementById('modalDiseasePest');
+        const reminderText = document.getElementById('reminderText');
+        const reminderDate = document.getElementById('reminderDate');
+        const addReminderBtn = document.getElementById('addReminderBtn');
+        const remindersList = document.getElementById('remindersList');
+        const noReminders = document.getElementById('noReminders');
+        const observationText = document.getElementById('observationText');
+        const observationDate = document.getElementById('observationDate');
+        const addObservationBtn = document.getElementById('addObservationBtn');
+        const observationsList = document.getElementById('observationsList');
+        const noObservations = document.getElementById('noObservations');
+        const deletePlantBtn = document.getElementById('deletePlantBtn');
+
+        let currentModalPlantId = null; // To keep track of the plant being viewed/edited
+
+        closeModalBtn.addEventListener('click', () => {
+            console.log("Close Modal button clicked!");
+            plantDetailsModal.classList.add('hidden');
+            currentModalPlantId = null;
+        });
+
+        messageBoxOverlay.addEventListener('click', () => {
+            console.log("Message Box Overlay clicked!");
+            messageBoxOverlay.classList.add('hidden');
+            messageBox.classList.add('hidden');
+        });
+
+
+        async function openPlantDetailsModal(plant) {
+            console.log("Opening Plant Details Modal for:", plant.plantName);
+            currentModalPlantId = plant.id;
+
+            modalPlantName.textContent = plant.plantName;
+            modalHealthStatus.textContent = plant.healthStatus || 'N/A';
+            modalPlantDetails.textContent = plant.plantDetails || 'No specific details provided.';
+            modalDiseasePest.textContent = plant.diseasePest || 'No specific disease or pest detected.';
+
+            modalCareTips.innerHTML = '';
+            if (plant.careTips && Array.isArray(plant.careTips)) {
+                plant.careTips.forEach(tip => {
+                    const li = document.createElement('li');
+                    li.textContent = tip;
+                    modalCareTips.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'No specific care tips provided.';
+                modalCareTips.appendChild(li);
+            }
+
+            // Display Reminders
+            displayReminders(plant.reminders || []);
+
+            // Display Growth Observations
+            displayObservations(plant.growthObservations || []);
+
+            // Set today's date as default for new reminders/observations
+            const today = new Date().toISOString().split('T')[0];
+            reminderDate.value = today;
+            observationDate.value = today;
+
+            plantDetailsModal.classList.remove('hidden');
+        }
+
+        function displayReminders(reminders) {
+            remindersList.innerHTML = '';
+            if (reminders.length === 0) {
+                noReminders.classList.remove('hidden');
+            } else {
+                noReminders.classList.add('hidden');
+                reminders.forEach(r => {
+                    const li = document.createElement('li');
+                    li.className = 'flex justify-between items-center bg-green-100 p-2 rounded-md';
+                    li.innerHTML = `
+                        <span><strong>${r.type}</strong> on ${r.date}${r.notes ? ` - ${r.notes}` : ''}</span>
+                        <button data-id="${r.id}" class="text-red-600 hover:text-red-800 ml-2 delete-reminder-btn">&times;</button>
+                    `;
+                    remindersList.appendChild(li);
+                });
+                document.querySelectorAll('.delete-reminder-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        console.log("Delete Reminder button clicked!");
+                        deleteReminder(e.target.dataset.id)
+                    });
+                });
+            }
+        }
+
+        function displayObservations(observations) {
+            observationsList.innerHTML = '';
+            if (observations.length === 0) {
+                noObservations.classList.remove('hidden');
+            } else {
+                noObservations.classList.add('hidden');
+                // Sort observations by date, newest first
+                observations.sort((a, b) => new Date(b.date) - new Date(a.date));
+                observations.forEach(o => {
+                    const obsDiv = document.createElement('div');
+                    obsDiv.className = 'bg-green-100 p-3 rounded-md border border-green-200';
+                    obsDiv.innerHTML = `
+                        <p class="text-sm text-green-700"><strong>Date:</strong> ${o.date}</p>
+                        <p class="text-green-800 mt-1">${o.observation}</p>
+                        <button data-id="${o.id}" class="text-red-600 hover:text-red-800 mt-2 delete-observation-btn">Delete</button>
+                    `;
+                    observationsList.appendChild(obsDiv);
+                });
+                document.querySelectorAll('.delete-observation-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        console.log("Delete Observation button clicked!");
+                        deleteObservation(e.target.dataset.id)
+                    });
+                });
+            }
+        }
+
+        addReminderBtn.addEventListener('click', async () => {
+            console.log("Add Reminder button clicked!");
+            if (!currentModalPlantId) return;
+            const type = reminderText.value.trim();
+            const date = reminderDate.value;
+
+            if (!type || !date) {
+                showMessageBox("Please enter reminder text and date.");
+                return;
+            }
+
+            const newReminder = {
+                id: crypto.randomUUID(), // Unique ID for the reminder
+                type: type,
+                date: date,
+                notes: '' // You could add a notes field if desired
+            };
+
+            try {
+                const plantDocRef = doc(db, `artifacts/${appId}/users/${userId}/plants`, currentModalPlantId);
+                const plantDoc = await getDoc(plantDocRef);
+                if (plantDoc.exists()) {
+                    const currentReminders = plantDoc.data().reminders || [];
+                    await updateDoc(plantDocRef, {
+                        reminders: [...currentReminders, newReminder]
+                    });
+                    showMessageBox("Reminder added successfully!");
+                    reminderText.value = ''; // Clear input
+                    // The onSnapshot listener will automatically update the modal
+                }
+            } catch (e) {
+                console.error("Error adding reminder: ", e);
+                showMessageBox("Failed to add reminder.");
+            }
+        });
+
+        async function deleteReminder(reminderId) {
+            if (!currentModalPlantId) return;
+
+            try {
+                const plantDocRef = doc(db, `artifacts/${appId}/users/${userId}/plants`, currentModalPlantId);
+                const plantDoc = await getDoc(plantDocRef);
+                if (plantDoc.exists()) {
+                    const currentReminders = plantDoc.data().reminders || [];
+                    const updatedReminders = currentReminders.filter(r => r.id !== reminderId);
+                    await updateDoc(plantDocRef, {
+                        reminders: updatedReminders
+                    });
+                    showMessageBox("Reminder deleted.");
+                }
+            } catch (e) {
+                console.error("Error deleting reminder: ", e);
+                showMessageBox("Failed to delete reminder.");
+            }
+        }
+
+
+        addObservationBtn.addEventListener('click', async () => {
+            console.log("Add Observation button clicked!");
+            if (!currentModalPlantId) return;
+            const observation = observationText.value.trim();
+            const date = observationDate.value;
+
+            if (!observation || !date) {
+                showMessageBox("Please enter observation text and date.");
+                return;
+            }
+
+            const newObservation = {
+                id: crypto.randomUUID(), // Unique ID for the observation
+                date: date,
+                observation: observation,
+                imageUrl: '' // Placeholder for image URL if you implement image upload for observations
+            };
+
+            try {
+                const plantDocRef = doc(db, `artifacts/${appId}/users/${userId}/plants`, currentModalPlantId);
+                const plantDoc = await getDoc(plantDocRef);
+                if (plantDoc.exists()) {
+                    const currentObservations = plantDoc.data().growthObservations || [];
+                    await updateDoc(plantDocRef, {
+                        growthObservations: [...currentObservations, newObservation]
+                    });
+                    showMessageBox("Observation added successfully!");
+                    observationText.value = ''; // Clear input
+                    // The onSnapshot listener will automatically update the modal
+                }
+            } catch (e) {
+                console.error("Error adding observation: ", e);
+                showMessageBox("Failed to add observation.");
+            }
+        });
+
+        async function deleteObservation(observationId) {
+            if (!currentModalPlantId) return;
+
+            try {
+                const plantDocRef = doc(db, `artifacts/${appId}/users/${userId}/plants`, currentModalPlantId);
+                const plantDoc = await getDoc(plantDocRef);
+                if (plantDoc.exists()) {
+                    const currentObservations = plantDoc.data().growthObservations || [];
+                    const updatedObservations = currentObservations.filter(o => o.id !== observationId);
+                    await updateDoc(plantDocRef, {
+                        growthObservations: updatedObservations
+                    });
+                    showMessageBox("Observation deleted.");
+                }
+            } catch (e) {
+                console.error("Error deleting observation: ", e);
+                showMessageBox("Failed to delete observation.");
+            }
+        }
+
+        deletePlantBtn.addEventListener('click', async () => {
+            console.log("Delete Plant button clicked!");
+            if (!currentModalPlantId) return;
+
+            // Confirm deletion (using custom message box)
+            showMessageBox("Are you sure you want to delete this plant? This cannot be undone.", true); // Pass true for a confirm-like box
+            messageBoxCloseBtn.textContent = 'Cancel';
+            const confirmDeleteBtn = document.createElement('button');
+            confirmDeleteBtn.textContent = 'Delete';
+            confirmDeleteBtn.className = 'btn-primary bg-red-500 hover:bg-red-600 ml-2';
+            messageBox.appendChild(confirmDeleteBtn);
+
+            confirmDeleteBtn.onclick = async () => {
+                console.log("Confirm Delete button clicked!");
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/plants`, currentModalPlantId));
+                    showMessageBox("Plant deleted successfully!");
+                    plantDetailsModal.classList.add('hidden'); // Close modal
+                    // The onSnapshot listener for saved plants will automatically update the list
+                } catch (e) {
+                    console.error("Error deleting plant: ", e);
+                    showMessageBox("Failed to delete plant.");
+                } finally {
+                    // Clean up confirm buttons
+                    messageBoxCloseBtn.textContent = 'OK';
+                    confirmDeleteBtn.remove();
+                    messageBoxOverlay.classList.add('hidden');
+                    messageBox.classList.add('hidden');
+                }
+            };
+
+            messageBoxCloseBtn.onclick = () => { // Re-assign close button behavior if user cancels
+                console.log("Cancel Delete button clicked!");
+                messageBoxCloseBtn.textContent = 'OK';
+                confirmDeleteBtn.remove();
+                messageBoxOverlay.classList.add('hidden');
+                messageBox.classList.add('hidden');
+            };
+        });
+
+        // Update showMessageBox to handle confirmation
+        const originalShowMessageBox = showMessageBox;
+        showMessageBox = (message, isConfirm = false) => {
+            originalShowMessageBox(message);
+            if (isConfirm) {
+                // Do nothing here, the caller will add specific buttons
+            } else {
+                // Ensure only one OK button for simple messages
+                const existingConfirmBtn = messageBox.querySelector('.btn-primary.bg-red-500');
+                if (existingConfirmBtn) existingConfirmBtn.remove();
+                messageBoxCloseBtn.textContent = 'OK';
+            }
+        };
+
+        messageBoxCloseBtn.addEventListener('click', () => {
+            console.log("Message Box OK button clicked!");
+            messageBoxOverlay.classList.add('hidden');
+            messageBox.classList.add('hidden');
+        });
+
+
+        // --- New Features: General Daily Reminders and Dynamic Seasonal Guides ---
+
+        // Elements for General Daily Reminders
+        const generalReminderText = document.getElementById('generalReminderText');
+        const addGeneralReminderBtn = document.getElementById('addGeneralReminderBtn');
+        const generalRemindersList = document.getElementById('generalRemindersList');
+        const noGeneralReminders = document.getElementById('noGeneralReminders');
+
+        addGeneralReminderBtn.addEventListener('click', async () => {
+            console.log("Add General Reminder button clicked!");
+            if (!isAuthReady || !userId) {
+                showMessageBox("Please wait for authentication to be ready.");
+                return;
+            }
+            const reminder = generalReminderText.value.trim();
+            if (!reminder) {
+                showMessageBox("Please enter a reminder.");
+                return;
+            }
+
+            const newGeneralReminder = {
+                id: crypto.randomUUID(),
+                text: reminder,
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                const generalRemindersRef = collection(db, `artifacts/${appId}/users/${userId}/generalReminders`);
+                await addDoc(generalRemindersRef, newGeneralReminder);
+                showMessageBox("General reminder added!");
+                generalReminderText.value = '';
+            } catch (e) {
+                console.error("Error adding general reminder: ", e);
+                showMessageBox("Failed to add general reminder.");
+            }
+        });
+
+        function loadGeneralReminders() {
+            if (!isAuthReady || !userId) {
+                return;
+            }
+
+            const generalRemindersRef = collection(db, `artifacts/${appId}/users/${userId}/generalReminders`);
+            onSnapshot(generalRemindersRef, (snapshot) => {
+                generalRemindersList.innerHTML = '';
+                if (snapshot.empty) {
+                    noGeneralReminders.classList.remove('hidden');
+                } else {
+                    noGeneralReminders.classList.add('hidden');
+                    snapshot.forEach(doc => {
+                        const reminder = { id: doc.id, ...doc.data() };
+                        const li = document.createElement('li');
+                        li.className = 'flex justify-between items-center bg-green-100 p-2 rounded-md';
+                        li.innerHTML = `
+                            <span>${reminder.text}</span>
+                            <button data-id="${reminder.id}" class="text-red-600 hover:text-red-800 ml-2 delete-general-reminder-btn">&times;</button>
+                        `;
+                        generalRemindersList.appendChild(li);
+                    });
+                    document.querySelectorAll('.delete-general-reminder-btn').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            console.log("Delete General Reminder button clicked!");
+                            deleteGeneralReminder(e.target.dataset.id)
+                        });
+                    });
+                }
+            }, (error) => {
+                console.error("Error listening to general reminders:", error);
+                showMessageBox("Error loading general reminders.");
+            });
+        }
+
+        async function deleteGeneralReminder(reminderId) {
+            if (!isAuthReady || !userId) {
+                showMessageBox("Authentication not ready. Cannot delete.");
+                return;
+            }
+            try {
+                await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/generalReminders`, reminderId));
+                showMessageBox("General reminder deleted.");
+            } catch (e) {
+                console.error("Error deleting general reminder: ", e);
+                showMessageBox("Failed to delete general reminder.");
+            }
+        }
+
+        // Elements for Dynamic Seasonal Guides
+        const locationInput = document.getElementById('locationInput');
+        const getSeasonalGuideBtn = document.getElementById('getSeasonalGuideBtn');
+        const seasonalBtnText = document.getElementById('seasonalBtnText');
+        const seasonalLoadingSpinner = document.getElementById('seasonalLoadingSpinner');
+        const seasonalGuideResults = document.getElementById('seasonalGuideResults');
+        const seasonalGuidePlaceholder = document.getElementById('seasonalGuidePlaceholder');
+
+        const springGuideDiv = document.getElementById('springGuide');
+        const summerGuideDiv = document.getElementById('summerGuide');
+        const autumnGuideDiv = document.getElementById('autumnGuide');
+        const winterGuideDiv = document.getElementById('winterGuide');
+
+        getSeasonalGuideBtn.addEventListener('click', async () => {
+            console.log("Get Seasonal Guide button clicked!");
+            const location = locationInput.value.trim();
+            if (!location) {
+                showMessageBox("Please enter a location to get seasonal guides.");
+                return;
+            }
+
+            // Show loading state
+            seasonalBtnText.textContent = 'Getting Guide...';
+            seasonalLoadingSpinner.classList.remove('hidden');
+            getSeasonalGuideBtn.disabled = true;
+            seasonalGuidePlaceholder.classList.add('hidden');
+            springGuideDiv.classList.add('hidden');
+            summerGuideDiv.classList.add('hidden');
+            autumnGuideDiv.classList.add('hidden');
+            winterGuideDiv.classList.add('hidden');
+
+            try {
+                const prompt = `Provide detailed seasonal plant care tips for a "${location}" climate, covering Spring, Summer, Autumn, and Winter. For each season, list specific, actionable tips. Format the response as a JSON object with keys: "spring", "summer", "autumn", "winter". Each key's value should be an array of strings, where each string is a care tip.`;
+
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "spring": { "type": "ARRAY", "items": { "type": "STRING" } },
+                                "summer": { "type": "ARRAY", "items": { "type": "STRING" } },
+                                "autumn": { "type": "ARRAY", "items": { "type": "STRING" } },
+                                "winter": { "type": "ARRAY", "items": { "type": "STRING" } }
+                            },
+                            "propertyOrdering": ["spring", "summer", "autumn", "winter"]
+                        }
+                    }
+                };
+
+                const apiKey = "AIzaSyCW0grfwkxbhKndK02L11y4NRUhYWPhpec"; // Updated API Key
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    try {
+                        const seasonalData = JSON.parse(result.candidates[0].content.parts[0].text);
+
+                        // Function to render tips
+                        const renderTips = (elementId, tips) => {
+                            const ul = document.querySelector(`#${elementId} ul`);
+                            ul.innerHTML = '';
+                            if (tips && Array.isArray(tips) && tips.length > 0) {
+                                tips.forEach(tip => {
+                                    const li = document.createElement('li');
+                                    li.textContent = tip;
+                                    ul.appendChild(li);
+                                });
+                                document.getElementById(elementId).classList.remove('hidden');
+                            } else {
+                                document.getElementById(elementId).classList.add('hidden');
+                            }
+                        };
+
+                        renderTips('springGuide', seasonalData.spring);
+                        renderTips('summerGuide', seasonalData.summer);
+                        renderTips('autumnGuide', seasonalData.autumn);
+                        renderTips('winterGuide', seasonalData.winter);
+
+                        if (!seasonalData.spring && !seasonalData.summer && !seasonalData.autumn && !seasonalData.winter) {
+                            seasonalGuidePlaceholder.textContent = "No specific seasonal tips found for this location. Try a more general term like 'temperate' or 'tropical'.";
+                            seasonalGuidePlaceholder.classList.remove('hidden');
+                        } else {
+                             seasonalGuidePlaceholder.classList.add('hidden'); // Hide placeholder if content is rendered
+                        }
+                    } catch (parseError) {
+                        console.error('Error parsing AI response JSON for seasonal guide:', parseError);
+                        console.error('Raw AI response for seasonal guide:', result.candidates[0].content.parts[0].text);
+                        showMessageBox('AI response for seasonal guide was unreadable. Please try a different location or rephrase.');
+                        seasonalGuidePlaceholder.textContent = "AI response was unreadable. Check console for details.";
+                        seasonalGuidePlaceholder.classList.remove('hidden');
+                    }
+
+                } else {
+                    showMessageBox('Could not get seasonal guide for this location. Please try again or a different location.');
+                    console.error('AI response structure unexpected for seasonal guide:', result);
+                    if (result.error) {
+                        console.error('API Error details for seasonal guide:', result.error);
+                    }
+                    seasonalGuidePlaceholder.textContent = "Failed to load seasonal guide. Please try again.";
+                    seasonalGuidePlaceholder.classList.remove('hidden');
+                }
+
+            } catch (error) {
+                console.error('Error during seasonal guide generation:', error);
+                showMessageBox('An error occurred while fetching seasonal guide. Please try again.');
+                seasonalGuidePlaceholder.textContent = "An error occurred. Please try again.";
+                seasonalGuidePlaceholder.classList.remove('hidden');
+            } finally {
+                // Reset loading state
+                seasonalBtnText.textContent = 'Get Guide';
+                seasonalLoadingSpinner.classList.add('hidden');
+                getSeasonalGuideBtn.disabled = false;
+            }
+        });
+
+    </script>
+</body>
+</html>
